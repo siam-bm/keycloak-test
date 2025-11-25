@@ -1,3 +1,7 @@
+# Node modules
+node_modules/
+package-lock.json
+
 # Keycloak data and runtime files
 keycloak-*/data/
 keycloak-*/lib/
@@ -35,6 +39,8 @@ desktop.ini
 *.jar
 *.war
 *.ear
+target/
+dependency-reduced-pom.xml
 
 # Keycloak downloads
 *.zip
@@ -45,3 +51,7 @@ desktop.ini
 *.pem
 *.key
 *.crt
+
+# Mock API data files (generated)
+mock-hpe-api/data/users.json
+mock-hpe-api/data/companies.json
