@@ -35,9 +35,8 @@ const domainSchema = new mongoose.Schema({
 });
 
 // Update timestamp on save
-domainSchema.pre('save', function(next) {
+domainSchema.pre('save', async function() {
   this.updated_at = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Domain', domainSchema);

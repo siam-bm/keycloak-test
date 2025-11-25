@@ -3,7 +3,19 @@
     "allow": [
       "Bash(npm start)",
       "Bash(sc query:*)",
-      "Bash(net start MongoDB)"
+      "Bash(net start MongoDB)",
+      "Bash(git commit:*)",
+      "Bash(mvn clean package:*)",
+      "Bash(where:*)",
+      "Bash(choco --version)",
+      "Bash(powershell -Command \"Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString(''https://community.chocolatey.org/install.ps1''))\")",
+      "Bash(powershell:*)",
+      "Bash(C:/Users/siam/Desktop/keycloak-test/apache-maven-3.9.6/bin/mvn.cmd clean package:*)",
+      "Bash(copy keycloak-extensionstargetkeycloak-hpe-extensions-1.0.0.jar keycloak-26.4.5providers)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(git reset:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

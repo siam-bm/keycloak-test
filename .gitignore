@@ -2,6 +2,16 @@
 node_modules/
 package-lock.json
 
+# Documentation files
+*.md
+!README.md
+
+# Maven installation
+apache-maven-*/
+
+# Temp files
+curl
+
 # Keycloak data and runtime files
 keycloak-*/data/
 keycloak-*/lib/
