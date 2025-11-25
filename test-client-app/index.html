@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keycloak Test Client - Hykmah Identity Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .logged-in {
+            display: none;
+        }
+
+        .user-info {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .user-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+            text-align: right;
+            word-break: break-all;
+        }
+
+        .token-display {
+            background: #2d2d2d;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+            word-break: break-all;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        .logout-btn {
+            background: #f44336;
+        }
+
+        .copy-btn {
+            background: #4caf50;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #66bb6a;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #4caf50;
+            color: white;
+        }
+
+        .roles-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .roles-list li {
+            background: #667eea;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin: 5px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>🔐 Hykmah Identity</h1>
+            <p>Keycloak Local Test Environment</p>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-section" class="login-form">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            <button onclick="login()">Continue to Login</button>
+        </div>
+
+        <!-- Logged In Section -->
+        <div id="logged-in-section" class="logged-in">
+            <div class="alert alert-success">
+                ✅ Successfully authenticated!
+            </div>
+
+            <div class="user-info">
+                <h3>User Information</h3>
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value" id="user-email">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value" id="user-name">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Company:</span>
+                    <span class="info-value" id="user-company">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Roles:</span>
+                    <span class="info-value" id="user-roles">-</span>
+                </div>
+            </div>
+
+            <div class="user-info">
+                <h3>Access Token (JWT)</h3>
+                <div class="token-display" id="token-display">No token</div>
+                <div class="button-group">
+                    <button class="copy-btn" onclick="copyToken()">📋 Copy Token</button>
+                    <button class="copy-btn" onclick="decodeToken()">🔍 Decode at JWT.io</button>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button onclick="refreshToken()">🔄 Refresh Token</button>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Keycloak Configuration
+        const KEYCLOAK_URL = 'http://localhost:8080';
+        const REALM = 'hykmah';
+        const CLIENT_ID = 'hykmah-test-app';
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+        let accessToken = null;
+        let refreshTokenValue = null;
+
+        // Check if returning from Keycloak
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+
+            if (code) {
+                // Exchange code for tokens
+                exchangeCodeForToken(code);
+            } else {
+                // Check if already logged in (token in sessionStorage)
+                const storedToken = sessionStorage.getItem('access_token');
+                if (storedToken) {
+                    accessToken = storedToken;
+                    refreshTokenValue = sessionStorage.getItem('refresh_token');
+                    displayUserInfo();
+                }
+            }
+        };
+
+        function login() {
+            const email = document.getElementById('email').value;
+
+            if (!email) {
+                alert('Please enter your email address');
+                return;
+            }
+
+            // Generate PKCE challenge (simplified for testing)
+            const codeVerifier = generateCodeVerifier();
+            sessionStorage.setItem('code_verifier', codeVerifier);
+
+            // Build authorization URL
+            const authUrl = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/auth` +
+                `?client_id=${CLIENT_ID}` +
+                `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+                `&response_type=code` +
+                `&scope=openid profile email` +
+                `&login_hint=${encodeURIComponent(email)}`;
+
+            // Redirect to Keycloak
+            console.log('🔄 Redirecting to Keycloak:', authUrl);
+            window.location.href = authUrl;
+        }
+
+        async function exchangeCodeForToken(code) {
+            console.log('🔄 Exchanging authorization code for tokens...');
+
+            const tokenUrl = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`;
+
+            const params = new URLSearchParams();
+            params.append('grant_type', 'authorization_code');
+            params.append('code', code);
+            params.append('client_id', CLIENT_ID);
+            params.append('redirect_uri', REDIRECT_URI);
+
+            try {
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: params
+                });
+
+                if (!response.ok) {
+                    throw new Error('Token exchange failed: ' + response.statusText);
+                }
+
+                const data = await response.json();
+
+                accessToken = data.access_token;
+                refreshTokenValue = data.refresh_token;
+
+                // Store in session
+                sessionStorage.setItem('access_token', accessToken);
+                sessionStorage.setItem('refresh_token', refreshTokenValue);
+
+                console.log('✅ Tokens received successfully');
+
+                // Clean URL
+                window.history.replaceState({}, document.title, REDIRECT_URI);
+
+                // Display user info
+                displayUserInfo();
+
+            } catch (error) {
+                console.error('❌ Error exchanging token:', error);
+                alert('Login failed: ' + error.message);
+            }
+        }
+
+        function displayUserInfo() {
+            // Decode JWT
+            const payload = parseJwt(accessToken);
+            console.log('📋 Token payload:', payload);
+
+            // Show logged-in section
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('logged-in-section').style.display = 'block';
+
+            // Populate user info
+            document.getElementById('user-email').textContent = payload.email || '-';
+            document.getElementById('user-name').textContent = payload.name || '-';
+            document.getElementById('user-company').textContent = payload.company_name || 'Not assigned';
+
+            // Display roles
+            const roles = payload.company_roles || [];
+            const roleText = roles.length > 0
+                ? roles.map(r => r.role).join(', ')
+                : 'No roles';
+            document.getElementById('user-roles').textContent = roleText;
+
+            // Display token
+            document.getElementById('token-display').textContent = JSON.stringify(payload, null, 2);
+        }
+
+        async function refreshToken() {
+            console.log('🔄 Refreshing token...');
+
+            const tokenUrl = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`;
+
+            const params = new URLSearchParams();
+            params.append('grant_type', 'refresh_token');
+            params.append('refresh_token', refreshTokenValue);
+            params.append('client_id', CLIENT_ID);
+
+            try {
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: params
+                });
+
+                if (!response.ok) {
+                    throw new Error('Token refresh failed');
+                }
+
+                const data = await response.json();
+                accessToken = data.access_token;
+                refreshTokenValue = data.refresh_token;
+
+                sessionStorage.setItem('access_token', accessToken);
+                sessionStorage.setItem('refresh_token', refreshTokenValue);
+
+                console.log('✅ Token refreshed');
+                displayUserInfo();
+                alert('✅ Token refreshed successfully!');
+
+            } catch (error) {
+                console.error('❌ Error refreshing token:', error);
+                alert('Failed to refresh token. Please login again.');
+                logout();
+            }
+        }
+
+        async function logout() {
+            console.log('🚪 Logging out...');
+
+            const logoutUrl = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/logout` +
+                `?redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+
+            // Clear session
+            sessionStorage.clear();
+            accessToken = null;
+            refreshTokenValue = null;
+
+            // Redirect to logout
+            window.location.href = logoutUrl;
+        }
+
+        function copyToken() {
+            navigator.clipboard.writeText(accessToken);
+            alert('✅ Token copied to clipboard!');
+        }
+
+        function decodeToken() {
+            window.open('https://jwt.io/#debugger-io?token=' + accessToken, '_blank');
+        }
+
+        // Utility functions
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+                    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+                ).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Error parsing JWT:', e);
+                return {};
+            }
+        }
+
+        function generateCodeVerifier() {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Log configuration on load
+        console.log('🔧 Keycloak Test Client Configuration:');
+        console.log('   Keycloak URL:', KEYCLOAK_URL);
+        console.log('   Realm:', REALM);
+        console.log('   Client ID:', CLIENT_ID);
+        console.log('   Redirect URI:', REDIRECT_URI);
+    </script>
+</body>
+</html>
