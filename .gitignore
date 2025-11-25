@@ -1,0 +1,47 @@
+# Keycloak data and runtime files
+keycloak-*/data/
+keycloak-*/lib/
+keycloak-*/providers/
+keycloak-*/themes/
+
+# Keep only custom themes if you add them
+!keycloak-*/themes/custom/
+
+# Logs
+*.log
+keycloak-*/data/log/
+
+# H2 Database files
+*.mv.db
+*.trace.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Build artifacts
+*.class
+*.jar
+*.war
+*.ear
+
+# Keycloak downloads
+*.zip
+
+# Environment files
+.env
+.env.local
+*.pem
+*.key
+*.crt
