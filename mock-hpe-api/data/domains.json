@@ -1,0 +1,30 @@
+[
+  {
+    "domain": "testcorp.com",
+    "company_id": "TC123456",
+    "company_name": "Test Corporation",
+    "sso_enforced": true,
+    "idp_alias": "google"
+  },
+  {
+    "domain": "flexible.com",
+    "company_id": "FL789012",
+    "company_name": "Flexible Inc",
+    "sso_enforced": false,
+    "idp_alias": "google"
+  },
+  {
+    "domain": "webalive.com.au",
+    "company_id": "CA341B",
+    "company_name": "WebAlive",
+    "sso_enforced": true,
+    "idp_alias": "azuread-webalive"
+  },
+  {
+    "domain": "gmail.com",
+    "company_id": "GMAIL001",
+    "company_name": "Gmail Users Company",
+    "sso_enforced": false,
+    "idp_alias": "google"
+  }
+]
