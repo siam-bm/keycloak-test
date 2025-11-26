@@ -5,6 +5,7 @@ package-lock.json
 # Documentation files
 *.md
 !README.md
+!SETUP_NEW_MACHINE.md
 
 # Maven installation
 apache-maven-*/
