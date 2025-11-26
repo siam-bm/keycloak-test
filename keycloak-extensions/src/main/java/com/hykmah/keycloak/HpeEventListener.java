@@ -7,6 +7,7 @@ import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.FederatedIdentityModel;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Custom Event Listener for Just-In-Time (JIT) User Provisioning
@@ -143,15 +145,51 @@ public class HpeEventListener implements EventListenerProvider {
 
             String email = user.getEmail();
             String identityProvider = event.getDetails().get("identity_provider_alias");
-            String idpSub = user.getFirstAttribute("FEDERATED_IDENTITY_ID");
 
-            System.out.println("   📧 Processing IdP login for: " + email + " via " + identityProvider);
+            // Get federated identity to extract idp_sub
+            String idpSub = null;
+            Set<FederatedIdentityModel> federatedIdentities = session.users().getFederatedIdentitiesStream(realm, user).collect(java.util.stream.Collectors.toSet());
+            for (FederatedIdentityModel identity : federatedIdentities) {
+                if (identity.getIdentityProvider().equals(identityProvider)) {
+                    idpSub = identity.getUserId();
+                    break;
+                }
+            }
+
+            System.out.println("   📧 Processing IdP login for: " + email + " via " + identityProvider + " (sub: " + idpSub + ")");
 
             // Check if user already exists in HPE
-            if (checkUserExists(email)) {
+            Map<String, Object> existingUser = getUserFromHPE(email);
+            if (existingUser != null) {
                 System.out.println("   ⚠️  User already exists in HPE: " + email);
-                // Update last login
-                updateUserLastLogin(email);
+
+                // Check for IdP collision
+                String existingIdp = (String) existingUser.get("idp");
+
+                if (!identityProvider.equals(existingIdp)) {
+                    System.out.println("   🚨 COLLISION DETECTED!");
+                    System.out.println("      Existing IdP: " + existingIdp);
+                    System.out.println("      Current IdP: " + identityProvider);
+
+                    // Check if domain has SSO enforcement
+                    String domain = extractDomain(email);
+                    Map<String, Object> domainConfig = getDomainConfig(domain);
+
+                    if (domainConfig != null && Boolean.TRUE.equals(domainConfig.get("sso_enforced"))) {
+                        System.out.println("      ❌ SSO ENFORCED - Login blocked");
+                        // Store collision info in user attributes for frontend to display
+                        user.setSingleAttribute("login_error", "Please use your corporate login method: " + existingIdp);
+                        throw new RuntimeException("Account collision: SSO enforced for this domain");
+                    } else {
+                        System.out.println("      ⚠️  Flexible domain - Account linking needed");
+                        user.setSingleAttribute("account_linking_required", "true");
+                        user.setSingleAttribute("existing_idp", existingIdp);
+                        user.setSingleAttribute("attempted_idp", identityProvider);
+                    }
+                }
+
+                // Update last login and IdP info if changed
+                updateUserInHPE(email, identityProvider, idpSub);
                 return;
             }
 
@@ -193,6 +231,52 @@ public class HpeEventListener implements EventListenerProvider {
         } catch (Exception e) {
             System.err.println("   ⚠️  Error checking user existence: " + e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Get user details from HPE database
+     */
+    private Map<String, Object> getUserFromHPE(String email) {
+        try {
+            HttpGet request = new HttpGet(hpeApiUrl + "/api/users?email=" + email);
+            CloseableHttpResponse response = httpClient.execute(request);
+
+            if (response.getStatusLine().getStatusCode() == 200) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                Map<String, Object> userData = mapper.readValue(responseBody, Map.class);
+                response.close();
+                return userData;
+            }
+
+            response.close();
+            return null;
+        } catch (Exception e) {
+            System.err.println("   ⚠️  Error getting user from HPE: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get domain configuration
+     */
+    private Map<String, Object> getDomainConfig(String domain) {
+        try {
+            HttpGet request = new HttpGet(hpeApiUrl + "/api/domains/" + domain);
+            CloseableHttpResponse response = httpClient.execute(request);
+
+            if (response.getStatusLine().getStatusCode() == 200) {
+                String responseBody = EntityUtils.toString(response.getEntity());
+                Map<String, Object> domainConfig = mapper.readValue(responseBody, Map.class);
+                response.close();
+                return domainConfig;
+            }
+
+            response.close();
+            return null;
+        } catch (Exception e) {
+            System.err.println("   ⚠️  Error getting domain config: " + e.getMessage());
+            return null;
         }
     }
 
@@ -262,6 +346,43 @@ public class HpeEventListener implements EventListenerProvider {
             getResponse.close();
         } catch (Exception e) {
             System.err.println("   ⚠️  Error updating last login: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Update user's IdP info and last login
+     */
+    private void updateUserInHPE(String email, String idp, String idpSub) {
+        try {
+            // First get user ID
+            HttpGet getRequest = new HttpGet(hpeApiUrl + "/api/users?email=" + email);
+            CloseableHttpResponse getResponse = httpClient.execute(getRequest);
+
+            if (getResponse.getStatusLine().getStatusCode() == 200) {
+                String responseBody = EntityUtils.toString(getResponse.getEntity());
+                Map<String, Object> userData = mapper.readValue(responseBody, Map.class);
+                String userId = (String) userData.get("_id");
+
+                // Update IdP info and last login
+                HttpPatch patchRequest = new HttpPatch(hpeApiUrl + "/api/users/" + userId);
+                patchRequest.setHeader("Content-Type", "application/json");
+
+                ObjectNode body = mapper.createObjectNode();
+                body.put("idp", idp);
+                body.put("idp_sub", idpSub);
+                body.put("last_login_at", java.time.Instant.now().toString());
+
+                patchRequest.setEntity(new StringEntity(mapper.writeValueAsString(body)));
+
+                CloseableHttpResponse patchResponse = httpClient.execute(patchRequest);
+                System.out.println("   ✅ Updated user IdP info: " + idp);
+                patchResponse.close();
+            }
+
+            getResponse.close();
+        } catch (Exception e) {
+            System.err.println("   ⚠️  Error updating user in HPE: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
