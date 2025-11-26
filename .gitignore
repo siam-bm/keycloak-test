@@ -15,9 +15,9 @@ curl
 
 # Keycloak data and runtime files
 keycloak-*/data/
-keycloak-*/lib/
 keycloak-*/providers/
 keycloak-*/themes/
+# Note: lib/ folder is included (157MB) for complete distribution
 
 # Keep only custom themes if you add them
 !keycloak-*/themes/custom/
