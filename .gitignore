@@ -7,6 +7,8 @@ package-lock.json
 !README.md
 !SETUP_NEW_MACHINE.md
 
+# Maven installation
+apache-maven-*/
 
 # Temp files
 curl
