@@ -50,14 +50,58 @@ public class DomainBasedAuthenticator implements Authenticator {
             IdentityProviderModel idp = context.getRealm().getIdentityProviderByAlias(domainConfig.idpAlias);
 
             if (idp != null && idp.isEnabled()) {
-                logger.info("IdP found and enabled: " + domainConfig.idpAlias + ", setting default IdP");
+                logger.info("IdP found and enabled: " + domainConfig.idpAlias + ", performing direct redirect");
 
-                // Set the default IdP hint so Identity Provider Redirector picks it up
-                context.getAuthenticationSession().setAuthNote("kc.idp.hint", domainConfig.idpAlias);
+                try {
+                    // Get authentication session info
+                    String clientId = context.getAuthenticationSession().getClient().getClientId();
+                    String tabId = context.getAuthenticationSession().getTabId();
 
-                logger.info("Default IdP set to: " + domainConfig.idpAlias);
-                context.success();
-                return;
+                    // Generate session code for CSRF protection
+                    String sessionCode = context.generateAccessCode();
+
+                    // Serialize client data (redirect_uri, response_type, etc.)
+                    org.keycloak.sessions.AuthenticationSessionModel authSession = context.getAuthenticationSession();
+                    String clientData = authSession.getClientNote(org.keycloak.services.resources.LoginActionsService.AUTH_SESSION_ID);
+
+                    if (clientData == null) {
+                        // Build client data from auth session
+                        clientData = org.keycloak.common.util.Base64Url.encode(
+                            String.format("{\"ru\":\"%s\",\"rt\":\"%s\"}",
+                                authSession.getRedirectUri() != null ? authSession.getRedirectUri() : "",
+                                "code"
+                            ).getBytes()
+                        );
+                    }
+
+                    // Build broker URL with all required session parameters
+                    String redirectUrl = context.getUriInfo().getBaseUriBuilder()
+                        .path("realms")
+                        .path(context.getRealm().getName())
+                        .path("broker")
+                        .path(domainConfig.idpAlias)
+                        .path("login")
+                        .queryParam("client_id", clientId)
+                        .queryParam("tab_id", tabId)
+                        .queryParam("client_data", clientData)
+                        .queryParam("session_code", sessionCode)
+                        .build()
+                        .toString();
+
+                    logger.info("Redirecting to: " + redirectUrl);
+
+                    Response response = Response.status(302)
+                        .location(java.net.URI.create(redirectUrl))
+                        .build();
+
+                    context.challenge(response);
+                    return;
+                } catch (Exception e) {
+                    logger.error("Error building redirect URL", e);
+                    // Fall back to showing login page
+                    context.attempted();
+                    return;
+                }
             } else {
                 logger.warn("IdP not found or disabled: " + domainConfig.idpAlias);
             }

@@ -15,7 +15,8 @@
       "Bash(dir:*)",
       "Bash(findstr:*)",
       "Bash(git reset:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

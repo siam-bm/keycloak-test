@@ -283,6 +283,7 @@
 
         let accessToken = null;
         let refreshTokenValue = null;
+        let idToken = null;
 
         // Check if returning from Keycloak
         window.onload = function() {
@@ -298,6 +299,7 @@
                 if (storedToken) {
                     accessToken = storedToken;
                     refreshTokenValue = sessionStorage.getItem('refresh_token');
+                    idToken = sessionStorage.getItem('id_token');
                     displayUserInfo();
                 }
             }
@@ -356,10 +358,12 @@
 
                 accessToken = data.access_token;
                 refreshTokenValue = data.refresh_token;
+                idToken = data.id_token;
 
                 // Store in session
                 sessionStorage.setItem('access_token', accessToken);
                 sessionStorage.setItem('refresh_token', refreshTokenValue);
+                sessionStorage.setItem('id_token', idToken);
 
                 console.log('✅ Tokens received successfully');
 
@@ -426,9 +430,11 @@
                 const data = await response.json();
                 accessToken = data.access_token;
                 refreshTokenValue = data.refresh_token;
+                idToken = data.id_token;
 
                 sessionStorage.setItem('access_token', accessToken);
                 sessionStorage.setItem('refresh_token', refreshTokenValue);
+                sessionStorage.setItem('id_token', idToken);
 
                 console.log('✅ Token refreshed');
                 displayUserInfo();
@@ -445,12 +451,14 @@
             console.log('🚪 Logging out...');
 
             const logoutUrl = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/logout` +
-                `?redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+                `?id_token_hint=${idToken}` +
+                `&post_logout_redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
             // Clear session
             sessionStorage.clear();
             accessToken = null;
             refreshTokenValue = null;
+            idToken = null;
 
             // Redirect to logout
             window.location.href = logoutUrl;
