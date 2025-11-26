@@ -24,12 +24,23 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo Copying JAR to Keycloak providers...
-copy /Y target\keycloak-hpe-extensions-*.jar ..\keycloak-26.4.5\providers\
+
+REM Find Keycloak directory
+for /d %%i in ("..\keycloak*") do set KEYCLOAK_DIR=%%i
+
+if not defined KEYCLOAK_DIR (
+    echo ERROR: Keycloak directory not found!
+    echo Please download and extract Keycloak first
+    pause
+    exit /b 1
+)
+
+copy /Y target\keycloak-hpe-extensions-*.jar "%KEYCLOAK_DIR%\providers\"
 
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ✓ Build successful!
-    echo ✓ JAR deployed to keycloak-26.4.5\providers\
+    echo ✓ JAR deployed to %KEYCLOAK_DIR%\providers\
     echo.
     echo Next steps:
     echo 1. Restart Keycloak

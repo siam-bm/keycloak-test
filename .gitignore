@@ -14,10 +14,11 @@ apache-maven-*/
 curl
 
 # Keycloak installation (download separately - see SETUP_NEW_MACHINE.md)
-keycloak-*/
+# Works with any version: keycloak-26.x.x, keycloak-27.x.x, etc.
+keycloak*/
 
 # Keep only custom themes if you add them
-!keycloak-*/themes/custom/
+!keycloak*/themes/custom/
 
 # Logs
 *.log
