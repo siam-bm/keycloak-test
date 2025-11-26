@@ -13,11 +13,8 @@ apache-maven-*/
 # Temp files
 curl
 
-# Keycloak data and runtime files
-keycloak-*/data/
-keycloak-*/providers/
-keycloak-*/themes/
-keycloak-*/lib/
+# Keycloak installation (download separately - see SETUP_NEW_MACHINE.md)
+keycloak-*/
 
 # Keep only custom themes if you add them
 !keycloak-*/themes/custom/
